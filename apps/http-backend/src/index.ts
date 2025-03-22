@@ -66,7 +66,7 @@ app.post(
   async (req: Request, res: Response) => {
     const validationResult = CreateRoomSchema.safeParse(req.body);
     if (!validationResult.success) {
-      res.status(400).json({ message: validationResult.error.errors });
+      res.status(400).json({ message: validationResult.error.errors }); 
       return;
     }
     const { roomId } = req.body;
@@ -83,4 +83,3 @@ app.listen(3001, () => {
   console.log("Server is running on port 3001");
 });
 
-// 1:43:12
