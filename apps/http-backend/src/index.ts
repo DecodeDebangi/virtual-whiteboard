@@ -2,27 +2,23 @@ import express, { Request, Response } from "express";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import dotenv from "dotenv";
+// import dotenv from "dotenv";
 import cors from "cors";
 import { authMiddleware } from "./middleware";
+import { JWT_SECRET } from "@repo/backend-common/config";
+import {
+  CreateUserSchema,
+  SigninSchema,
+  CreateRoomSchema,
+} from "@repo/common/types";
 
-dotenv.config();
+// dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Define input validation schema using zod
-const signupSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters long"),
-  password: z.string().min(6, "Password must be at least 6 characters long"),
-});
-const signinSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters long"),
-  password: z.string().min(6, "Password must be at least 6 characters long"),
-});
-
 app.post("/signup", async (req: Request, res: Response) => {
-  const validationResult = signupSchema.safeParse(req.body);
+  const validationResult = CreateUserSchema.safeParse(req.body);
   if (!validationResult.success) {
     res.status(400).json({ message: validationResult.error.errors });
     return;
@@ -43,7 +39,7 @@ app.post("/signup", async (req: Request, res: Response) => {
 });
 
 app.post("/signin", (req: Request, res: Response) => {
-  const validationResult = signinSchema.safeParse(req.body);
+  const validationResult = SigninSchema.safeParse(req.body);
   if (!validationResult.success) {
     res.status(400).json({ message: validationResult.error.errors });
     return;
@@ -57,7 +53,7 @@ app.post("/signin", (req: Request, res: Response) => {
   // Check if the username exists in the database
   // If user not found or password is incorrect, return an error
 
-  const token = jwt.sign({ username }, process.env.JWT_SECRET!, {
+  const token = jwt.sign({ username }, JWT_SECRET, {
     expiresIn: "1h",
   });
 
@@ -68,6 +64,11 @@ app.post(
   "/create-room",
   authMiddleware,
   async (req: Request, res: Response) => {
+    const validationResult = CreateRoomSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      res.status(400).json({ message: validationResult.error.errors });
+      return;
+    }
     const { roomId } = req.body;
     if (!roomId) {
       res.status(411).json({ message: "Invalid room ID" });
@@ -81,3 +82,5 @@ app.post(
 app.listen(3001, () => {
   console.log("Server is running on port 3001");
 });
+
+// 1:43:12

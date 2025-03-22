@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-dotenv.config();
+import { JWT_SECRET } from "@repo/backend-common/config";
+// import dotenv from "dotenv";
+// dotenv.config();
 
 interface AuthRequest extends Request {
   userId?: string; // Extend Request to include userId
@@ -27,7 +28,7 @@ export const authMiddleware = (
     // const decoded = jwt.verify(token, process.env.JWT_SECRET!);
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET!
+      JWT_SECRET
     ) as jwt.JwtPayload;
     if (!decoded || !decoded.userId) {
       res.status(401).json({ message: "Unauthorized / Invalid token" });
