@@ -10,6 +10,7 @@ import {
   SigninSchema,
   CreateRoomSchema,
 } from "@repo/common/types";
+import { prismaClient } from "@repo/db/client";
 
 // dotenv.config();
 const app = express();
@@ -17,22 +18,33 @@ app.use(express.json());
 app.use(cors());
 
 app.post("/signup", async (req: Request, res: Response) => {
-  const validationResult = CreateUserSchema.safeParse(req.body);
-  if (!validationResult.success) {
-    res.status(400).json({ message: validationResult.error.errors });
+  const parsedData = CreateUserSchema.safeParse(req.body);
+  if (!parsedData.success) {
+    res.status(400).json({ message: parsedData.error.errors });
     return;
   }
-  const { username, password } = req.body;
-  if (!username || !password) {
+  const { username, password, email } = req.body;
+  if (!username || !password || !email) {
     res.status(411).json({ message: "Invalid inputs" });
     return;
   }
 
-  // Check if the username already exists in the database
+  const existingUser = await prismaClient.user.findUnique({
+    where: { email: parsedData.data?.email },
+  });
+  if (existingUser) {
+    res.status(409).json({ message: "Username already exists" });
+    return;
+  }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  // Create a new user record in the database
+  const hashedPassword = await bcrypt.hash(parsedData.data?.password, 10);
+  const newUser = await prismaClient.user.create({
+    data: {
+      username: parsedData.data?.username,
+      password: hashedPassword,
+      email: parsedData.data?.email,
+    },
+  });
 
   res.status(201).json({ message: "User created successfully" });
 });
