@@ -153,7 +153,7 @@ app.get("/chats/:roomId", authMiddleware, async (req: AuthRequest, res) => {
       res.status(404).json({ message: "Room not found" });
       return;
     }
-  
+
     // If user is not the admin and has not sent any messages in the room, deny access
     const isMember = await prismaClient.chat.findFirst({
       where: {
@@ -178,6 +178,35 @@ app.get("/chats/:roomId", authMiddleware, async (req: AuthRequest, res) => {
     });
     res.status(200).json({ chats });
     return;
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+    console.error(error);
+  }
+});
+
+app.get("/room/:slug", authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+    const slug = req.params.slug;
+    if (!slug) {
+      res.status(400).json({ message: "Invalid room ID", slug });
+      return;
+    }
+    const room = await prismaClient.room.findFirst({
+      where: {
+        slug: slug,
+      },
+    });
+
+    if (!room) {
+      res.status(404).json({ message: "Room not found" });
+      return;
+    }
+
+    res.status(200).json({ roomId: room.id });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
     console.error(error);
