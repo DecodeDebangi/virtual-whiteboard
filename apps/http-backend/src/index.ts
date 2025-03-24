@@ -133,6 +133,57 @@ app.post("/create-room", authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
+app.get("/chats/:roomId", authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+    const roomId = Number(req.params.roomId);
+    if (!roomId) {
+      res.status(400).json({ message: "Invalid room ID" });
+      return;
+    }
+    const room = await prismaClient.room.findUnique({
+      where: {
+        id: roomId,
+      },
+    });
+    if (!room) {
+      res.status(404).json({ message: "Room not found" });
+      return;
+    }
+  
+    // If user is not the admin and has not sent any messages in the room, deny access
+    const isMember = await prismaClient.chat.findFirst({
+      where: {
+        roomId: roomId,
+        userId: req.userId,
+      },
+    });
+
+    if (room.adminId !== req.userId && !isMember) {
+      res.status(403).json({ message: "You are not a member of this room" });
+      return;
+    }
+
+    const chats = await prismaClient.chat.findMany({
+      where: {
+        roomId: roomId,
+      },
+      orderBy: {
+        id: "desc",
+      },
+      take: 100,
+    });
+    res.status(200).json({ chats });
+    return;
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+    console.error(error);
+  }
+});
+
 app.listen(3001, () => {
   console.log("Server is running on port 3001");
 });
