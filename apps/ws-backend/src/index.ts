@@ -1,31 +1,89 @@
-import { WebSocketServer } from "ws";
+import { WebSocket, WebSocketServer } from "ws";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-import {JWT_SECRET} from "@repo/backend-common/config";
-
-dotenv.config();
+import { JWT_SECRET } from "@repo/backend-common/config";
+import { prismaClient } from "@repo/db/client";
 
 const wss = new WebSocketServer({ port: 8080 });
 
+interface User {
+  ws: WebSocket;
+  rooms: string[];
+  userId: string;
+}
+const users: User[] = [];
+
+const checkUser = (token: string): string | null => {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    return decoded?.userId || null;
+  } catch (error) {
+    return null;
+  }
+};
+
 wss.on("connection", (ws, request) => {
+  console.log("New WebSocket connection");
+  ws.send("Welcome to the WebSocket server!");
   const url = request.url;
-  if (!url || !url.includes("?") || !url.startsWith("ws://")) {
+  if (!url || !url.includes("?")) {
+    console.log("Invalid URL format");
     return;
   }
   const queryParams = new URLSearchParams(url.split("?")[1]);
   const token = queryParams.get("token") || "";
+  const userId = checkUser(token);
 
-  const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
-  if (!decoded || !decoded.userId) {
+  if (!userId) {
+    console.log("Invalid token");
     ws.close();
-    return;
+    return null;
   }
 
-  const userId = decoded.userId;
   console.log(`User ${userId} connected`);
 
-  ws.on("message", (data) => {
-    console.log(`Received message => ${data}`);
+  users.push({
+    userId,
+    rooms: [],
+    ws,
   });
-  ws.send("pong!");
+
+  ws.on("message", (data) => {
+    const parsedData = JSON.parse(data.toString());
+
+    if (parsedData.type == "join_room") {
+      const user = users.find((user) => user.ws === ws);
+      user?.rooms.push(parsedData.roomId);
+      console.log(`User ${user?.userId} joined room ${parsedData.roomId}`);
+      console.log(`Current rooms: ${user?.rooms}`);
+    }
+
+    if (parsedData.type == "leave_room") {
+      const user = users.find((user) => user.ws === ws);
+      if (!user) return;
+      user.rooms = user.rooms.filter((room) => room !== parsedData.roomId);
+    }
+
+    if (parsedData.type == "send_message") {
+      const roomId = parsedData.roomId;
+      // const message = parsedData.message;
+
+      const message = {
+        userId: userId,
+        message: parsedData.message,
+        roomId: parsedData.roomId,
+      };
+
+      users.forEach((user) => {
+        if (user.rooms.includes(roomId)) {
+          user.ws.send(
+            JSON.stringify({
+              type: "chat",
+              message: message,
+              roomId: roomId,
+            })
+          );
+        }
+      });
+    }
+  });
 });
