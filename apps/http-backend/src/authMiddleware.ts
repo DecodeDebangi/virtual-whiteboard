@@ -4,7 +4,7 @@ import { JWT_SECRET } from "@repo/backend-common/config";
 // import dotenv from "dotenv";
 // dotenv.config();
 
-interface AuthRequest extends Request {
+export interface AuthRequest extends Request {
   userId?: string; // Extend Request to include userId
 }
 

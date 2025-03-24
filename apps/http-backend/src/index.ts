@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import cors from "cors";
-import { authMiddleware } from "./authMiddleware";
+import { authMiddleware, AuthRequest } from "./authMiddleware";
 import { JWT_SECRET } from "@repo/backend-common/config";
 import {
   CreateUserSchema,
@@ -91,36 +91,48 @@ app.post("/signin", async (req, res) => {
   }
 });
 
-app.post("/create-room", authMiddleware, async (req, res) => {
-  const parsedData = CreateRoomSchema.safeParse(req.body);
-  if (!parsedData.success) {
-    res.status(400).json({ message: parsedData.error.errors });
+app.post("/create-room", authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const parsedData = CreateRoomSchema.safeParse(req.body);
+    if (!parsedData.success) {
+      res.status(400).json({ message: parsedData.error.errors });
+      return;
+    }
+
+    const roomId = parsedData.data.name;
+    if (
+      !roomId ||
+      roomId.length === 0 ||
+      roomId === "undefined" ||
+      roomId === "null"
+    ) {
+      res.status(411).json({ message: "Invalid room ID" });
+      return;
+    }
+
+    // Create a new room in the database
+    const newRoom = await prismaClient.room.create({
+      data: {
+        slug: parsedData.data.name,
+        adminId: req.userId,
+      },
+    });
+
+    res
+      .status(201)
+      .json({ message: "Room created successfully", roomId: newRoom.id });
     return;
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+    console.error(error);
   }
-
-  const { roomId } = req.body;
-  if (
-    !roomId ||
-    roomId.length === 0 ||
-    roomId === "undefined" ||
-    roomId === "null" ||
-    roomId.length !== 6
-  ) {
-    res.status(411).json({ message: "Invalid room ID" });
-    return;
-  }
-
-  // Create a new room in the database
-  const newRoom = await prismaClient.room.create({
-    data: {
-      slug: parsedData.data.name,
-      adminId: req.userId,
-    },
-  });
-
-  res.status(201).json({ message: "Room created successfully" });
-  return;
 });
+
 app.listen(3001, () => {
   console.log("Server is running on port 3001");
 });
