@@ -1,10 +1,9 @@
 import express, { Request, Response } from "express";
-import { z } from "zod";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 // import dotenv from "dotenv";
 import cors from "cors";
-import { authMiddleware } from "./middleware";
+import { authMiddleware } from "./authMiddleware";
 import { JWT_SECRET } from "@repo/backend-common/config";
 import {
   CreateUserSchema,
@@ -66,7 +65,7 @@ app.post(
   async (req: Request, res: Response) => {
     const validationResult = CreateRoomSchema.safeParse(req.body);
     if (!validationResult.success) {
-      res.status(400).json({ message: validationResult.error.errors }); 
+      res.status(400).json({ message: validationResult.error.errors });
       return;
     }
     const { roomId } = req.body;
@@ -82,4 +81,3 @@ app.post(
 app.listen(3001, () => {
   console.log("Server is running on port 3001");
 });
-
