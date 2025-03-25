@@ -25,13 +25,21 @@ wss.on("connection", (ws, request) => {
   console.log("New WebSocket connection");
   ws.send("Welcome to the WebSocket server!");
   const url = request.url;
-  if (!url || !url.includes("?")) {
+  if (!url) {
     console.log("Invalid URL format");
     return;
   }
   const queryParams = new URLSearchParams(url.split("?")[1]);
   const token = queryParams.get("token") || "";
   const userId = checkUser(token);
+  console.log("userId", userId);
+  console.log("token", token);
+  console.log("url", url);
+  if (!token) {
+    console.log("Token not found");
+    ws.close();
+    return null;
+  }
 
   if (!userId) {
     console.log("Invalid token");
@@ -47,7 +55,7 @@ wss.on("connection", (ws, request) => {
     ws,
   });
 
-  ws.on("message", async(data) => {
+  ws.on("message", async (data) => {
     const parsedData = JSON.parse(data.toString());
 
     if (parsedData.type == "join_room") {
@@ -63,23 +71,17 @@ wss.on("connection", (ws, request) => {
       user.rooms = user.rooms.filter((room) => room !== parsedData.roomId);
     }
 
-    if (parsedData.type == "send_message") {
+    if (parsedData.type == "chat") {
       const roomId = parsedData.roomId;
-      // const message = parsedData.message;
+      const message = parsedData.message;
 
       await prismaClient.chat.create({
         data: {
-          message: parsedData.message,
+          message: message,
           roomId,
           userId,
         },
       });
-
-      const message = {
-        userId: userId,
-        message: parsedData.message,
-        roomId: parsedData.roomId,
-      };
 
       users.forEach((user) => {
         if (user.rooms.includes(roomId)) {

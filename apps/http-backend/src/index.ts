@@ -81,7 +81,7 @@ app.post("/signin", async (req, res) => {
     }
 
     const token = jwt.sign({ userId: existingUser?.id }, JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "4h",
     });
 
     res.status(200).json({ token: token, message: "Login successful" });
@@ -172,7 +172,7 @@ app.get("/chats/:roomId", authMiddleware, async (req: AuthRequest, res) => {
         roomId: roomId,
       },
       orderBy: {
-        id: "desc",
+        id: "asc",
       },
       take: 100,
     });
