@@ -213,6 +213,6 @@ app.get("/room/:slug", authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
-app.listen(3001, () => {
-  console.log("Server is running on port 3001");
+app.listen(4001, () => {
+  console.log("Server is running on port 4001");
 });
