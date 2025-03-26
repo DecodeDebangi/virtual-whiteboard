@@ -4,7 +4,7 @@ import ChatRoom from "../../../components/ChatRoom";
 
 async function getRoomId(slug: string) {
   // const response = await axios.get(`${BACKEND_HTTP_URL}/room/${slug}`);
-  const response = await axios.get(`http://localhost:3001/room/${slug}`, {
+  const response = await axios.get(`${BACKEND_HTTP_URL}/room/${slug}`, {
     headers: {
       Authorization: `Bearer ${JWT_TOKEN}`,
     },

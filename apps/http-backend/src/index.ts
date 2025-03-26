@@ -80,9 +80,7 @@ app.post("/signin", async (req, res) => {
       return;
     }
 
-    const token = jwt.sign({ userId: existingUser?.id }, JWT_SECRET, {
-      expiresIn: "4h",
-    });
+    const token = jwt.sign({ userId: existingUser?.id }, JWT_SECRET);
 
     res.status(200).json({ token: token, message: "Login successful" });
   } catch (error) {
