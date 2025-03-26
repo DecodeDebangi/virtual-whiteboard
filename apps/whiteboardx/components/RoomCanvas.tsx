@@ -28,14 +28,6 @@ const RoomCanvas = ({ roomId }: { roomId: String }) => {
   return (
     <div>
       <Canvas roomId={roomId} socket={socket} />
-
-      {/* <div className='absolute bottom-1 right-0 left-0 flex justify-center gap-4 p-4'>
-        <button className='bg-white text-black px-2 py-1 rounded'>Rect</button>
-        <button className='bg-white text-black px-2 py-1 rounded'>
-          Circle
-        </button>
-        <button className='bg-white text-black px-2 py-1 rounded'>Line</button>
-      </div> */}
     </div>
   );
 };
